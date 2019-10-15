@@ -15,12 +15,73 @@ const toppings = [
   'onions'
 ];
 
+class PizzaSizeButton extends React.Component {
+
+  constructor(props) {
+    super(props);
+      this.label = props.size;
+      this.parent = props.parent;
+      this.price = prices[this.label.toLowerCase()];
+  }
+
+  handlePress = () => {
+    let newState = {};
+    newState.pizzaSize = this.label;
+    newState.pizzaTotal = this.price;
+    newState.pizzaSummary = newState.pizzaSize + " pizza";
+    this.parent.updateTotal(newState);
+    this.parent.setState(newState);
+  }
+
+  render() {
+    return (
+      <TouchableOpacity 
+        style={styles.sizeButton}
+        onPress={this.handlePress}>
+        <Text>{this.label[0]}</Text>
+        <Text style={styles.tiny}>${this.price}</Text>
+      </TouchableOpacity>
+    );
+  }
+}
+
+class ToppingSwitch extends React.Component {
+  constructor(props) {
+    super(props);
+    this.topping = props.topping;
+    this.property = this.topping.toLowerCase();
+    this.parent = props.parent;
+  }
+
+  handleValueChange = (value) => {
+    let newState = {};
+    for (t of toppings) {
+      newState[t] = this.parent.state[t];
+    }
+    newState[this.property] = value;
+    this.parent.updateToppings(newState);
+    this.parent.updateTotal(newState);
+    this.parent.setState(newState);
+  }
+
+  render() {
+    return (
+      <View style={styles.sectionItem}>
+        <Text style={styles.sectionItemText}>{this.topping}</Text>
+        <Switch
+          onValueChange={this.handleValueChange}
+          value={this.parent.state[this.property]}
+        />
+      </View>
+    );
+  }
+}
+
 export default class App extends React.Component {
 
   constructor(props) {
     super(props);
   
-    this.pizzaEmoji = '\u1F355';
     this.state = {
       orderName: 'Guest',
       pizzaSize: 'Large',
@@ -32,8 +93,6 @@ export default class App extends React.Component {
       toppingsSummary: '0 toppings',
       pizzaTotal: prices.large,
       toppingsTotal: 0,
-      taxTotal: 0,
-      tip: 0,
       total: 0,
     }
     this.updateTotal(this.state);
@@ -52,11 +111,9 @@ export default class App extends React.Component {
       toppingsLabel = toppingsLabel.slice(0, -1);
       toppingsLabel = '(' + toppingsLabel + ')';
     }
-
-    newState.toppingsTotal = numToppings * prices.topping;
+    newState.toppingsTotal = numToppings * prices.topping * 2;
     newState.toppingsSummary = numToppings + ' toppings ' + toppingsLabel;
   }
-
 
   updateTotal(newState) {
     let newTotal = 0;
@@ -72,65 +129,7 @@ export default class App extends React.Component {
     } else {
       newTotal += this.state.toppingsTotal;
     }
-
-    newState.taxTotal = newTotal * prices.tax;
-    newTotal += newState.taxTotal;
-
-    if (newState.tip && !(isNaN(newState.tip))) {
-      newTotal += newState.tip;
-    } else {
-      newTotal += this.state.tip;
-    }
     newState.total = newTotal;
-  }
-
-  handleSizeChange(newSize) {
-    let newState = {};
-    newState.pizzaSize = newSize;
-    newState.pizzaTotal = prices[newSize.toLowerCase()];
-    newState.pizzaSummary = newState.pizzaSize + " pizza";
-    this.updateTotal(newState);
-    this.setState(newState);
-  }
-
-  handleSmall = () => {
-    this.handleSizeChange('Small');
-  }
-
-  handleMedium = () => {
-    this.handleSizeChange('Medium');
-  }
-
-  handleLarge = () => {
-    this.handleSizeChange('Large');
-  }
-
-  handleToppings(value, topping) {
-    let newState = {};
-    for (t of toppings) {
-      newState[t] = this.state[t];
-    }
-
-    newState[topping] = value;
-    this.updateToppings(newState);
-    this.updateTotal(newState);
-    this.setState(newState);
-  }
-
-  handlePepperoni = (value) => {
-    this.handleToppings(value, 'pepperoni');
-  }
-
-  handleSausage = (value) =>  {
-    this.handleToppings(value, 'sausage');
-  }
-
-  handleMushrooms = (value) =>  {
-    this.handleToppings(value, 'mushrooms');
-  }
-
-  handleOnions = (value) => {
-    this.handleToppings(value, 'onions');
   }
 
   render() {
@@ -157,24 +156,15 @@ export default class App extends React.Component {
               <Text style={styles.pizzaSizeText}>Size: {this.state.pizzaSize}</Text>
             </View>
             <View style={styles.sizeButtonGroup}>
-              <TouchableOpacity 
-                style={styles.sizeButton}
-                onPress={this.handleSmall}>
-                <Text>S</Text>
-                <Text style={styles.tiny}>$7.99</Text>
-              </TouchableOpacity >
-              <TouchableOpacity 
-                style={styles.sizeButton}
-                onPress={this.handleMedium}>
-                <Text>M</Text>
-                <Text style={styles.tiny}>$9.99</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.sizeButton}
-                onPress={this.handleLarge}>
-                <Text>L</Text>
-                <Text style={styles.tiny}>$11.99</Text>
-              </TouchableOpacity>
+              <PizzaSizeButton
+                size="Small"
+                parent={this}/>
+              <PizzaSizeButton
+                size="Medium"
+                parent={this}/>
+              <PizzaSizeButton
+                size="Large"
+                parent={this}/>
             </View>
           </View>
           
@@ -183,34 +173,22 @@ export default class App extends React.Component {
           </View>
 
           <View style={styles.sectionList}>
-            <View style={styles.sectionItem}>
-              <Text style={styles.sectionItemText}>Pepperoni</Text>
-              <Switch
-                onValueChange={this.handlePepperoni}
-                value={this.state.pepperoni}
-              />
-            </View>
-            <View style={styles.sectionItem}>
-              <Text style={styles.sectionItemText}>Sausage</Text>
-              <Switch
-                onValueChange={this.handleSausage}
-                value={this.state.sausage}
-              />
-            </View>
-            <View style={styles.sectionItem}>
-              <Text style={styles.sectionItemText}>Mushrooms</Text>
-              <Switch
-                onValueChange={this.handleMushrooms}
-                value={this.state.mushrooms}
-              />
-            </View>
-            <View style={styles.sectionItem}>
-              <Text style={styles.sectionItemText}>Onions</Text>
-              <Switch
-                onValueChange={this.handleOnions}
-                value={this.state.onions}
-              />
-            </View>
+            <ToppingSwitch
+              topping="Pepperoni"
+              parent={this}
+            />
+            <ToppingSwitch
+              topping="Sausage"
+              parent={this}
+            />
+            <ToppingSwitch
+              topping="Mushrooms"
+              parent={this}
+            />
+            <ToppingSwitch
+              topping="Onions"
+              parent={this}
+            />                        
           </View>
 
         </View>
@@ -229,21 +207,13 @@ export default class App extends React.Component {
             <Text style={styles.sectionItemText}>${this.state.toppingsTotal}</Text>
           </View>
           <View style={styles.sectionItem}>
-            <Text style={styles.sectionItemText}>Tax (6%)</Text>
-            <Text style={styles.sectionItemText}>${this.state.taxTotal.toFixed(2)}</Text>
-          </View>
-          <View style={styles.sectionItem}>
             <Text style={styles.sectionItemText}>Total</Text>
             <Text style={styles.sectionItemText}>${this.state.total.toFixed(2)}</Text>
           </View>
           <View style={styles.orderSummaryButtons}>
             <TouchableOpacity
               style={styles.orderSummaryButton}>
-              <Text> Reset </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.orderSummaryButton}>
-              <Text> Confirm </Text>
+              <Text> Place Order </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -306,6 +276,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'lightblue'
   }, 
+  tiny: {
+    fontSize: 9
+  },
   pizzaSizeText:{
     fontSize: 24
   },  
@@ -338,11 +311,12 @@ const styles = StyleSheet.create({
   orderSummaryButtons: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginTop: 20
   },
   orderSummaryButton: {
     backgroundColor: 'lightblue',
-    width: '25%',
+    width: '50%',
     padding: 20,
     borderRadius: 20,
     alignItems: 'center'
@@ -351,9 +325,7 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderWidth: 1,
     width: '40%',
-    alignItems: 'flex-end'
-  },
-  tiny: {
-    fontSize: 9
+    alignItems: 'flex-end',
+    paddingHorizontal: '3%'
   },
 });
